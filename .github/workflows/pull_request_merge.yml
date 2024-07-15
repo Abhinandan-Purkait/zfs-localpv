@@ -34,7 +34,7 @@ jobs:
         run: |
           export NIX_PATH=nixpkgs=$(jq '.nixpkgs.url' scripts/nix/sources.json -r)
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
-          branch_name="${{ github.event.pull_request.base.ref }}"
+          branch_name="${{ github.ref_name }}"
           nix-shell --pure --run "./scripts/validate-version.sh --branch $branch_name" ./scripts/shell.nix
 
       - name: Run chart-testing (list-changed)
@@ -156,7 +156,7 @@ jobs:
             # ghcr.io/${{ env.IMAGE_ORG }}/zfs-driver
             images: |
               ${{ env.IMAGE_ORG }}/zfs-driver
-              tags: |
+            tags: |
               type=raw,value=latest,enable=false
               type=raw,value=${{ env.TAG }}
         
