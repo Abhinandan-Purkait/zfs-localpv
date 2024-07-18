@@ -39,7 +39,7 @@ jobs:
           draft: false
           signoff: true
           branch-suffix: short-commit-hash
-          token: ${{ secrets.ORG_CI_GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   prepare_release_branch_after_release:
     runs-on: ubuntu-latest
@@ -71,7 +71,7 @@ jobs:
           draft: false
           signoff: true
           branch-suffix: short-commit-hash
-          token: ${{ secrets.ORG_CI_GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   prepare_release_branch_on_creation:
     runs-on: ubuntu-latest
@@ -103,5 +103,5 @@ jobs:
           draft: false
           signoff: true
           branch-suffix: short-commit-hash
-          token: ${{ secrets.ORG_CI_GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
