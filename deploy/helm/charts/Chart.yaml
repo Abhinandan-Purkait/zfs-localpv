@@ -14,7 +14,7 @@ keywords:
   - storage
 sources:
 - https://github.com/openebs/zfs-localpv
-- bob
+- bob-the-builder
 dependencies:
   - name: crds
     version: 10.11.0-prerelease
