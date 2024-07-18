@@ -14,6 +14,8 @@ jobs:
     if: ${{ github.ref_type == 'tag' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: develop
       - uses: cachix/install-nix-action@v22
       - name: Pre-populate nix-shell
         run: |
