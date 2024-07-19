@@ -1,5 +1,5 @@
 apiVersion: v2
 name: crds
-version: 10.12.0-develop
+version: 10.12.0-prerelease
 description: A Helm chart that collects CustomResourceDefinitions (CRDs) from zfs-localpv.
-appVersion: 10.12.0-develop
+appVersion: 10.12.0-prerelease
