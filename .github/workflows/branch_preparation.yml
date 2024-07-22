@@ -24,6 +24,9 @@ jobs:
           export NIX_PATH=nixpkgs=$(jq '.nixpkgs.url' nix/sources.json -r)
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
+      - name: Test the chart version updater script
+        run: |
+            nix-shell --pure --run "./scripts/test-update-chart-version.sh" ./shell.nix
       - name: Check if the chart is publishable
         run: |
             tag=${{ github.ref_name }}
@@ -56,6 +59,9 @@ jobs:
           export NIX_PATH=nixpkgs=$(jq '.nixpkgs.url' nix/sources.json -r)
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
+      - name: Test the chart version updater script
+        run: |
+            nix-shell --pure --run "./scripts/test-update-chart-version.sh" ./shell.nix
       - name: Check if the chart is publishable
         run: |
           tag=${{ github.ref_name }}
@@ -88,6 +94,9 @@ jobs:
           export NIX_PATH=nixpkgs=$(jq '.nixpkgs.url' nix/sources.json -r)
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
+      - name: Test the chart version updater script
+        run: |
+            nix-shell --pure --run "./scripts/test-update-chart-version.sh" ./shell.nix
       - name: Check if the chart is publishable
         run: |
           branch_name=${{ github.ref_name }}

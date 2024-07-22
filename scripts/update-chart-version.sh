@@ -17,6 +17,7 @@ help() {
 Usage: $(basename "$0") [OPTIONS]
 
 Options:
+  --dry-run                                 Get the final version without modifying.
   --branch <branch name>                    Name of the target branch.
   --tag <tag>                               Release tag.
 
@@ -62,10 +63,14 @@ create_version_from_tag() {
     local EXTRACTED_VERSION=$(echo "$TAG" | grep -oP '(?<=v)\d+\.\d+.\d+')
     if [[ $TYPE == "release" ]]; then
       VERSION="$(semver bump patch $EXTRACTED_VERSION)-prerelease"
-      echo "release/$(echo $EXTRACTED_VERSION | cut -d'.' -f1,2)"
+      if [[ -z $DRY_RUN ]];then
+        echo "release/$(echo $EXTRACTED_VERSION | cut -d'.' -f1,2)"
+      fi
     elif [[ $TYPE == "develop" ]]; then
       VERSION="$(semver bump minor $EXTRACTED_VERSION)-develop"
-      echo "develop"
+      if [[ -z $DRY_RUN ]];then
+        echo "develop"
+      fi
     else
       die "Invalid type. Expected 'release' or 'develop'."
     fi
@@ -100,28 +105,34 @@ VERSION=""
 # Parse arguments
 while [ "$#" -gt 0 ]; do
   case $1 in
-    -b|--branch)
-      BRANCH_NAME=$2
-      shift
-      ;;
-    -t|--tag)
-      TAG=$2
-      shift
-      ;;
-    --type)
-      TYPE=$2
+    -d|--dry-run)
+      DRY_RUN=1
       shift
       ;;
     -h|--help)
       help
       exit 0
       ;;
+    -b|--branch)
+      shift
+      BRANCH_NAME=$1
+      shift
+      ;;
+    -t|--tag)
+      shift
+      TAG=$1
+      shift
+      ;;
+    --type)
+      shift
+      TYPE=$1
+      shift
+      ;;
     *)
       help
       die "Unknown option: $1"
       ;;
   esac
-  shift
 done
 
 if [[ -n "${BRANCH_NAME-}" ]]; then
@@ -134,7 +145,11 @@ else
 fi
 
 if [[ -n $VERSION ]]; then
-  update_chart_yaml "$VERSION" "$VERSION"
+  if [[ -z $DRY_RUN ]];then
+    update_chart_yaml "$VERSION" "$VERSION"
+  else
+    echo "$VERSION"
+  fi
 else
   die "Failed to update the chart versions"
 fi
