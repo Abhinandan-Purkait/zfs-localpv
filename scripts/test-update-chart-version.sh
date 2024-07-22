@@ -51,3 +51,11 @@ run_test "Test 6: Valid tag with type develop [patch release]" \
 run_test "Test 7: Invalid tag format" \
          "Invalid tag format. Expected 'vX.Y.Z'" \
          --tag "1.2.3" --type "release" --dry-run
+
+run_test "Test 8: Supply an rc tag, with release type" \
+         "" \
+         --tag "v1.2.3-rc" --type "release" --dry-run
+
+run_test "Test 9: Supply an rc tag, with develop type" \
+         "" \
+         --tag "v1.2.3-rc" --type "develop" --dry-run
