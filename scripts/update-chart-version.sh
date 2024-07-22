@@ -49,7 +49,7 @@ create_version_from_release_branch() {
     if [[ "$CURRENT_CHART_VERSION" == *"-develop" ]]; then
       VERSION="${EXTRACTED_VERSION}.0-prerelease"
     elif [[ "$CURRENT_CHART_VERSION" == *"-prerelease" ]]; then
-      VERSION=$CURRENT_CHART_VERSION
+      NO_OP=1
     else
       die "Current chart version doesn't match a develop or prerel format"
     fi
@@ -74,6 +74,8 @@ create_version_from_tag() {
     else
       die "Invalid type. Expected 'release' or 'develop'."
     fi
+  elif [[ "$TAG" == *"-rc" ]]; then
+    NO_OP=1
   else
     die "Invalid tag format. Expected 'vX.Y.Z'"
   fi
@@ -91,6 +93,8 @@ update_chart_yaml() {
 
 set -euo pipefail
 
+DRY_RUN=
+NO_OP=
 # Set the path to the Chart.yaml file
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]:-"$0"}")")"
 ROOT_DIR="$SCRIPT_DIR/.."
@@ -144,12 +148,14 @@ else
   die "Either --branch or --tag and --type must be specified."
 fi
 
-if [[ -n $VERSION ]]; then
-  if [[ -z $DRY_RUN ]];then
-    update_chart_yaml "$VERSION" "$VERSION"
+if [[ -z $NO_OP ]]; then
+  if [[ -n $VERSION ]]; then
+    if [[ -z $DRY_RUN ]];then
+      update_chart_yaml "$VERSION" "$VERSION"
+    else
+      echo "$VERSION"
+    fi
   else
-    echo "$VERSION"
+    die "Failed to update the chart versions"
   fi
-else
-  die "Failed to update the chart versions"
 fi

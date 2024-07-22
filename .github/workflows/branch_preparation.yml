@@ -32,6 +32,7 @@ jobs:
             tag=${{ github.ref_name }}
             echo "BASE=$(nix-shell --pure --run "./scripts/update-chart-version.sh --tag $tag --type develop" ./shell.nix)" >> $GITHUB_ENV
       - name: Create Pull Request to develop
+        if:  ${{ env.BASE }}
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
@@ -67,6 +68,7 @@ jobs:
           tag=${{ github.ref_name }}
           echo "BASE=$(nix-shell --pure --run "./scripts/update-chart-version.sh --tag $tag --type release" ./shell.nix)" >> $GITHUB_ENV
       - name: Create Pull Request to release
+        if:  ${{ env.BASE }}
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
