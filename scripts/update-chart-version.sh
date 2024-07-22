@@ -91,6 +91,7 @@ update_chart_yaml() {
 
 set -euo pipefail
 
+DRY_RUN=
 # Set the path to the Chart.yaml file
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]:-"$0"}")")"
 ROOT_DIR="$SCRIPT_DIR/.."
