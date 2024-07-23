@@ -5,6 +5,7 @@ set -euo pipefail
 # Path to the script to be tested
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]:-"$0"}")")"
 SCRIPT_TO_TEST="$SCRIPT_DIR/update-chart-version.sh"
+FAILED=
 
 # Function to run a test case
 run_test() {
@@ -14,13 +15,16 @@ run_test() {
   local output
 
   echo "Running: $test_name"
+  set +e
   output=$("$SCRIPT_TO_TEST" "$@" 2>&1)
+  set -e
   if [ "$output" == "$expected_output" ]; then
     echo "PASS"
   else
     echo "FAIL"
     echo "Expected: $expected_output"
     echo "Got: $output"
+    FAILED=1
   fi
   echo "----------------------------------------"
 }
@@ -77,3 +81,8 @@ run_test "Test 12: rc tag, with type release and chart type prerelease" \
 run_test "Test 13:rc tag, with type develop and chart type develop" \
          "" \
          --tag "v1.2.3-rc" --type "develop" --dry-run --chart-version "1.2.4-develop"
+
+if [ -n "$FAILED" ]; then
+  echo "Failed"
+  exit 1
+fi
