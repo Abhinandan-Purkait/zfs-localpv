@@ -34,7 +34,7 @@ jobs:
 
       - name: Check if the chart is publishable
         run: |
-          TAG=${{ github.event.release.tag_name }}"
+          TAG=${{ github.event.release.tag_name }}
           ./scripts/update-chart-version.sh --tag $TAG --publish-release
 
       - name: Run chart-testing lint
@@ -123,15 +123,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - uses: cachix/install-nix-action@v22
       - name: Pre-populate nix-shell
         run: |
           export NIX_PATH=nixpkgs=$(jq '.nixpkgs.url' nix/sources.json -r)
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
-      - name: Update the chart tag so that image can be built
+
+      - name: Check if the chart is publishable
         run: |
-          TAG=${{ github.event.release.tag_name }}"
-          nix-shell --pure --run "./scripts/update-chart-version.sh --tag $TAG --publish-chart" ./shell.nix
+          TAG=${{ github.event.release.tag_name }}
+          nix-shell --pure --run "./scripts/update-chart-version.sh --tag $TAG --publish-release" ./shell.nix
           
       - name: Set Image Org
         run: |
@@ -218,15 +220,19 @@ jobs:
     needs: ["csi-driver"]
     steps:
       - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v22
       - name: Pre-populate nix-shell
         run: |
           export NIX_PATH=nixpkgs=$(jq '.nixpkgs.url' nix/sources.json -r)
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
-      - name: Update the chart tag so that image can be built
+
+      - name: Check if the chart is publishable
         run: |
-          TAG=${{ github.event.release.tag_name }}"
-          ./scripts/update-chart-version.sh --tag $TAG --publish-chart
+          TAG=${{ github.event.release.tag_name }}
+          nix-shell --pure --run "./scripts/update-chart-version.sh --tag $TAG --publish-release" ./shell.nix
+          
       - name: Publish zfs localpv develop or prerelease helm chart
         uses: stefanprodan/helm-gh-pages@master
         with:
