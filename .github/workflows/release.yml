@@ -6,7 +6,32 @@ on:
       - "created"
 
 jobs:
+  pre-checks:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up Docker CLI for GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Check if Docker image is available
+        run: |
+          IMAGE=ghcr.io/abhinandan-purkait/dev/zfs-driver:${{ github.ref_name }}
+          echo "Checking image: $IMAGE"
+          if ! docker buildx imagetools inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "❌ Docker image $IMAGE not found on GHCR"
+            exit 1
+          fi
+
+      - name: Check if Helm chart is available
+        run: |
+          CHART_REF=oci://ghcr.io/abhinandan-purkait/helm/zfs-localpv
+          echo "Checking chart: $CHART_REF --version ${{ github.ref_name }}"
+          if ! helm pull "$CHART_REF" --version "${{ github.ref_name }}" > /dev/null 2>&1; then
+            echo "❌ Helm chart version ${{ github.ref_name }} not found in GHCR"
+            exit 1
+          fi
+
   lint:
+    needs: ["pre-checks"]
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
