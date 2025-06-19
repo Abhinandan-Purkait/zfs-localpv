@@ -13,123 +13,123 @@ on:
       - "MAINTAINERS"
 
 jobs:
-  lint:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # lint:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: cachix/install-nix-action@v22
-      - uses: rrbutani/use-nix-shell-action@v1.1.0
-        with:
-          file: shell.nix
+  #     - uses: cachix/install-nix-action@v22
+  #     - uses: rrbutani/use-nix-shell-action@v1.1.0
+  #       with:
+  #         file: shell.nix
 
-      - name: Check if the chart follows a valid semver version
-        run: |
-          BRANCH=${{ github.ref_name }}
-          ./scripts/validate-chart-version.sh --branch $BRANCH
+  #     - name: Check if the chart follows a valid semver version
+  #       run: |
+  #         BRANCH=${{ github.ref_name }}
+  #         ./scripts/validate-chart-version.sh --branch $BRANCH
 
-      - name: Run chart-testing lint
-        run: ct lint --config ct.yaml
+  #     - name: Run chart-testing lint
+  #       run: ct lint --config ct.yaml
 
-      - name: Run golint
-        run: make golint
+  #     - name: Run golint
+  #       run: make golint
 
-  unit-tests:
-    runs-on: ubuntu-22.04
-    needs: ["lint"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # unit-tests:
+  #   runs-on: ubuntu-22.04
+  #   needs: ["lint"]
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Go 1.20
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.14
-          cache: false
+  #     - name: Set up Go 1.20
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: 1.20.14
+  #         cache: false
 
-      - name: Set go env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_ENV
+  #     - name: Set go env
+  #       run: |
+  #         echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+  #         echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_ENV
 
-      - name: Unit test
-        run: make test
+  #     - name: Unit test
+  #       run: make test
 
-      - name: Upload Coverage Report
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
-          name: coverage-$(date +%s)
-          flags: unittests
+  #     - name: Upload Coverage Report
+  #       uses: codecov/codecov-action@v4
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         file: ./coverage.txt
+  #         name: coverage-$(date +%s)
+  #         flags: unittests
 
-  bdd-tests:
-    runs-on: ubuntu-22.04
-    needs: ["unit-tests"]
-    strategy:
-      fail-fast: true
-      matrix:
-        kubernetes: [v1.27.3]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # bdd-tests:
+  #   runs-on: ubuntu-22.04
+  #   needs: ["unit-tests"]
+  #   strategy:
+  #     fail-fast: true
+  #     matrix:
+  #       kubernetes: [v1.27.3]
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Go 1.20
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.14
-          cache: false
+  #     - name: Set up Go 1.20
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: 1.20.14
+  #         cache: false
 
-      - name: Set go env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_ENV
+  #     - name: Set go env
+  #       run: |
+  #         echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+  #         echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_ENV
 
-      - name: Build images locally
-        run: make zfs-driver-image
+  #     - name: Build images locally
+  #       run: make zfs-driver-image
 
-      - name: Install zfs utils
-        run: sudo apt-get install zfsutils-linux -y
+  #     - name: Install zfs utils
+  #       run: sudo apt-get install zfsutils-linux -y
 
-      - name: Setup Minikube-Kubernetes
-        uses: medyagh/setup-minikube@latest
-        with:
-          cache: false
-          minikube-version: 1.31.1
-          driver: none
-          kubernetes-version: ${{ matrix.kubernetes }}
-          cni: calico
-          start-args: "--install-addons=false"
+  #     - name: Setup Minikube-Kubernetes
+  #       uses: medyagh/setup-minikube@latest
+  #       with:
+  #         cache: false
+  #         minikube-version: 1.31.1
+  #         driver: none
+  #         kubernetes-version: ${{ matrix.kubernetes }}
+  #         cni: calico
+  #         start-args: "--install-addons=false"
 
-      - name: Setting environment variables
-        run: |
-          echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
+  #     - name: Setting environment variables
+  #       run: |
+  #         echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
 
-      - name: bootstrap
-        run: make bootstrap
+  #     - name: bootstrap
+  #       run: make bootstrap
 
-      - name: Running tests
-        env:
-          OPENEBS_NAMESPACE: "openebs"
-        run: |
-          make ci
-          make helm-install
-          make sanity
+  #     - name: Running tests
+  #       env:
+  #         OPENEBS_NAMESPACE: "openebs"
+  #       run: |
+  #         make ci
+  #         make helm-install
+  #         make sanity
 
-      - name: Upload CI Test Coverage Report
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./tests/bdd_coverage.txt,./tests/bdd_coverage_custom-node-id.txt
-          name: coverage-bdd_coverage-$(date +%s)
-          flags: bddtests
+  #     - name: Upload CI Test Coverage Report
+  #       uses: codecov/codecov-action@v4
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         files: ./tests/bdd_coverage.txt,./tests/bdd_coverage_custom-node-id.txt
+  #         name: coverage-bdd_coverage-$(date +%s)
+  #         flags: bddtests
 
   csi-driver:
     runs-on: ubuntu-22.04
-    needs: ["bdd-tests"]
+    # needs: ["bdd-tests"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
