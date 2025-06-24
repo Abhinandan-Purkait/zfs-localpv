@@ -42,7 +42,7 @@ jobs:
           # QY_DEST: docker://quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
           # GH_DEST: docker://ghcr.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
         run: |
-          skopeo copy --all \
+          skopeo copy \
             --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
             --dest-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
             "docker://${SRC#docker://}" "$DH_DEST"
