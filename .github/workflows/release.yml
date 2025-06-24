@@ -37,7 +37,7 @@ jobs:
 
       - name: Mirror zfs-driver image to Docker Hub & Quay
         env:
-          SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
+          SRC: ghcr.io/abhinandan-purkait/dev/zfs-driver:${{ github.ref_name }}
           DH_DEST: docker://docker.io/abhinandan15/zfs-driver:${{ github.ref_name }}
           # QY_DEST: docker://quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
           # GH_DEST: docker://ghcr.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
