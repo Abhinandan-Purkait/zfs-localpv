@@ -47,6 +47,23 @@ jobs:
             --dest-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
             "docker://${SRC#docker://}" "$DH_DEST"
 
+      - name: Set up Helm CLI
+        uses: azure/setup-helm@v3
+
+      - name: Log in to GHCR for Helm
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u abhinandan-purkait --password-stdin
+
+      - name: Pull OCI chart from GHCR
+        run: |
+          CHART_REF=oci://ghcr.io/abhinandan-purkait/helm/zfs-localpv
+          helm pull "$CHART_REF" --version "${{ github.ref_name }}" --destination ./charts-staged
+
+      - name: Publish chart via helm-gh-pages
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          charts_dir: ./charts-staged
+
 # skopeo copy \
 #   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
 #   --dest-creds "${{ secrets.QUAY_USERNAME }}:${{ secrets.QUAY_TOKEN }}" \
