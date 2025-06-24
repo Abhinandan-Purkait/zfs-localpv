@@ -47,6 +47,11 @@ jobs:
             --dest-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
             "docker://${SRC#docker://}" "$DH_DEST"
 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
       - name: Set up Helm CLI
         uses: azure/setup-helm@v3
 
