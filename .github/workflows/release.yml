@@ -56,7 +56,10 @@ jobs:
       - name: Pull OCI chart from GHCR
         run: |
           CHART_REF=oci://ghcr.io/abhinandan-purkait/helm/zfs-localpv
-          helm pull "$CHART_REF" --version "${{ github.ref_name }}" --destination ./charts-staged
+          mkdir -p charts-staged
+          helm pull "$CHART_REF" \
+            --version "${{ github.ref_name }}" \
+            --destination charts-staged
 
       - name: Publish chart via helm-gh-pages
         uses: stefanprodan/helm-gh-pages@master
