@@ -71,7 +71,7 @@ jobs:
           cache: false
 
       - name: Build images locally
-        run: IMAGE_TAG=${{ env.TAG}} make zfs-driver-image
+        run: make zfs-driver-image
 
       - name: Install zfs utils
         run: sudo apt-get install zfsutils-linux -y
@@ -104,7 +104,7 @@ jobs:
         if: ${{ failure() }}
         timeout-minutes: 10
         uses: mxschmitt/action-tmate@v3
-        
+
   csi-driver:
     runs-on: ubuntu-22.04
     needs: ["bdd-tests"]
