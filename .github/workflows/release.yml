@@ -68,12 +68,14 @@ jobs:
           helm pull "$CHART_REF" \
             --version "${{ github.ref_name }}" \
             --destination charts-staged
+          mkdir -p charts-final
+          tar -xvf charts-staged/zfs-localpv-v2.11.0.tgz charts-final
 
       - name: Publish chart via helm-gh-pages
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: ./charts-staged
+          charts_dir: ./charts-final/zfs-localpv
 
 # skopeo copy \
 #   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
