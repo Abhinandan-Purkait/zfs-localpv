@@ -45,7 +45,7 @@ jobs:
           skopeo copy \
             --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
             --dest-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
-            "$SRC" "$DH_DEST"
+            "docker://${SRC#docker://}" "$DH_DEST"
 
 # skopeo copy \
 #   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
