@@ -25,7 +25,7 @@ jobs:
           #QY: quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
         run: |
             # mirror to Docker Hub
-            nix-shell --pure --run 'crane cp --all-platforms "$SRC" "docker://$DH" \
+            nix-shell --pure --run 'crane copy --platform all "$SRC" "docker://$DH" \
               --src-user="${{ github.actor }}" --src-password="${{ secrets.GITHUB_TOKEN }}" \
               --dest-user="${{ secrets.DOCKERHUB_USERNAME }}" --dest-password="${{ secrets.DOCKERHUB_TOKEN }}"'
 
