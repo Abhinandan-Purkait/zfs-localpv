@@ -70,16 +70,16 @@ jobs:
 
       - name: Pull OCI chart from GHCR
         run: |
-          rm -rf helm/deploy/charts
+          rm -rf deploy/helm/charts
           CHART_REF=oci://ghcr.io/${{ env.IMAGE_ORG }}/helm/zfs-localpv
           mkdir -p charts-staged
           helm pull "$CHART_REF" \
             --version "${{ github.ref_name }}" \
             --destination charts-staged
           mkdir -p charts-final
-          mkdir -p helm/deploy/charts
+          mkdir -p deploy/helm/charts
           tar -xvf charts-staged/zfs-localpv-v2.11.0.tgz -C charts-final
-          mv charts-final/zfs-localpv/* helm/deploy/charts
+          mv charts-final/zfs-localpv/* deploy/helm/charts
 
       - name: Update the registry and the repository
         run: |
