@@ -1,11 +1,12 @@
 name: Release Images and Charts
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+**'
+  release:
+    types:
+      - "created"
+
 jobs:
-  pre-checks:
+  copy-images-and-chart:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -18,6 +19,24 @@ jobs:
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
 
+      - name: Set Image Org
+        run: |
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=abhinandan-purkait || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # - name: Login to Quay
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: quay.io
+      #     username: ${{ secrets.QUAY_USERNAME }}
+      #     password: ${{ secrets.QUAY_TOKEN }}
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -25,57 +44,49 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to DOCKERHUB
-        uses: docker/login-action@v3
-        with:
-          registry: docker.io
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Mirror multi-arch image with crane
+      - name: Mirror multi-arch image with crane to Dockerhub
         env:
-          SRC: ghcr.io/abhinandan-purkait/dev/zfs-driver:${{ github.ref_name }}
-          DH: docker.io/abhinandan15/zfs-driver:${{ github.ref_name }}
+          SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
+          DH: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/zfs-driver:${{ github.ref_name }}
         run: |
-            nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.DH }}"
+            nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.DH }}" ./shell.nix
 
-  helm:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
+      - name: Mirror multi-arch image with crane to Github
+        env:
+          SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
+          GH: ghcr.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
+        run: |
+            nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.GH }}" ./shell.nix
 
-      - name: Set up Helm CLI
-        uses: azure/setup-helm@v3
+      # - name: Mirror multi-arch image with crane to Quay
+      #   env:
+      #     SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
+      #     QY: quay.io/${{ secrets.QUAY_USERNAME }}/zfs-driver:${{ github.ref_name }}
+      #   run: |
+      #       nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.QY }}"
 
       - name: Log in to GHCR for Helm
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u abhinandan-purkait --password-stdin
+        run: nix-shell --pure --run "echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u ${{ env.IMAGE_ORG }} --password-stdin" ./shell.nix
 
       - name: Pull OCI chart from GHCR
         run: |
-          CHART_REF=oci://ghcr.io/abhinandan-purkait/helm/zfs-localpv
+          rm -rf helm/deploy/charts
+          CHART_REF=oci://ghcr.io/${{ env.IMAGE_ORG }}/helm/zfs-localpv
           mkdir -p charts-staged
           helm pull "$CHART_REF" \
             --version "${{ github.ref_name }}" \
             --destination charts-staged
           mkdir -p charts-final
+          mkdir -p helm/deploy/charts
           tar -xvf charts-staged/zfs-localpv-v2.11.0.tgz -C charts-final
+          mv -r charts-final/zfs-localpv/* helm/deploy/charts
+
+      - name: Update the registry and the repository
+        run: |
+          nix-shell --pure --run "./scripts/update-reg-repo.sh --registry docker.io --repository ${{ env.DOCKERHUB_USERNAME }}" ./shell.nix
 
       - name: Publish chart via helm-gh-pages
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: ./charts-final
-
-# skopeo copy \
-#   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-#   --dest-creds "${{ secrets.QUAY_USERNAME }}:${{ secrets.QUAY_TOKEN }}" \
-#   "$SRC" "$QY_DEST"
-
-# skopeo copy \
-#   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-#   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-#   "$SRC" "$GH_DEST"
+          charts_dir: ./deploy/helm
