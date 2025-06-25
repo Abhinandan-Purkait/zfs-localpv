@@ -23,7 +23,7 @@ jobs:
           SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
           DH: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
         run: |
-            nix-shell --pure --run 'crane auth login -u ${{ secrets.DOCKERHUB_USERNAME }} --password ${{ secrets.DOCKERHUB_TOKEN }}'
+            nix-shell --pure --run "crane auth login -u ${{ secrets.DOCKERHUB_USERNAME }} --password ${{ secrets.DOCKERHUB_TOKEN }}"
             nix-shell --pure --run 'crane copy --platform all "$SRC" "$DH"'
 
   helm:
