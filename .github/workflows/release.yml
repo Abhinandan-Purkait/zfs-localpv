@@ -22,12 +22,10 @@ jobs:
         env:
           SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
           DH: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
-          #QY: quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
         run: |
             # mirror to Docker Hub
-            nix-shell --pure --run 'crane copy --platform all "$SRC" "docker://$DH" \
-              --src-user="${{ github.actor }}" --src-password="${{ secrets.GITHUB_TOKEN }}" \
-              --dest-user="${{ secrets.DOCKERHUB_USERNAME }}" --dest-password="${{ secrets.DOCKERHUB_TOKEN }}"'
+            nix-shell --pure --run 'echo "${{ secrets.GITHUB_TOKEN }}" | crane auth login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin'
+            nix-shell --pure --run 'crane copy --platform all "$SRC" "docker://$DH"'
 
   helm:
     runs-on: ubuntu-22.04
