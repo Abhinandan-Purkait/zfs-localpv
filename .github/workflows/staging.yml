@@ -71,7 +71,7 @@ jobs:
           cache: false
 
       - name: Build images locally
-        run: make zfs-driver-image
+        run:  make zfs-driver-image
 
       - name: Install zfs utils
         run: sudo apt-get install zfsutils-linux -y

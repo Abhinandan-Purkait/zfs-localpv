@@ -8,44 +8,23 @@ on:
 jobs:
   pre-checks:
     runs-on: ubuntu-22.04
-    steps:
-      - name: Set up Docker CLI for GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    steps:  
+      - uses: cachix/install-nix-action@v22
+      - uses: rrbutani/use-nix-shell-action@v1.1.0
+        with:
+          file: shell.nix
 
-      - name: Check if Docker image is available
-        run: |
-          IMAGE=ghcr.io/abhinandan-purkait/dev/zfs-driver:${{ github.ref_name }}
-          echo "Checking image: $IMAGE"
-          if ! docker buildx imagetools inspect "$IMAGE" > /dev/null 2>&1; then
-            echo "❌ Docker image $IMAGE not found on GHCR"
-            exit 1
-          fi
-
-      - name: Check if Helm chart is available
-        run: |
-          CHART_REF=oci://ghcr.io/abhinandan-purkait/helm/zfs-localpv
-          echo "Checking chart: $CHART_REF --version ${{ github.ref_name }}"
-          if ! helm pull "$CHART_REF" --version "${{ github.ref_name }}" > /dev/null 2>&1; then
-            echo "❌ Helm chart version ${{ github.ref_name }} not found in GHCR"
-            exit 1
-          fi
-
-      - name: Install Skopeo
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y skopeo
-
-      - name: Mirror zfs-driver image to Docker Hub & Quay
+      - name: Mirror multi-arch image with crane
         env:
-          SRC: ghcr.io/abhinandan-purkait/dev/zfs-driver:${{ github.ref_name }}
-          DH_DEST: docker://docker.io/abhinandan15/zfs-driver:${{ github.ref_name }}
-          # QY_DEST: docker://quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
-          # GH_DEST: docker://ghcr.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
+          SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ github.ref_name }}
+          DH: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
+          #QY: quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ github.ref_name }}
         run: |
-          skopeo copy --all \
-            --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-            --dest-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
-            "docker://${SRC#docker://}" "$DH_DEST"
+            # mirror to Docker Hub
+            nix-shell --pure --run 'crane cp --all-platforms "$SRC" "docker://$DH" \
+              --src-user="${{ github.actor }}" --src-password="${{ secrets.GITHUB_TOKEN }}" \
+              --dest-user="${{ secrets.DOCKERHUB_USERNAME }}" --dest-password="${{ secrets.DOCKERHUB_TOKEN }}"'
+
   helm:
     runs-on: ubuntu-22.04
     steps:
@@ -75,7 +54,7 @@ jobs:
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: ./charts-final/zfs-localpv
+          charts_dir: ./charts-final
 
 # skopeo copy \
 #   --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
