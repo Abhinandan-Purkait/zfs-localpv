@@ -37,7 +37,7 @@ jobs:
           SRC: ghcr.io/abhinandan-purkait/dev/zfs-driver:${{ github.ref_name }}
           DH: docker.io/abhinandan15/zfs-driver:${{ github.ref_name }}
         run: |
-            nix-shell --pure --run 'crane copy --platform all "$SRC" "$DH"'
+            nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.DH }}"
 
   helm:
     runs-on: ubuntu-22.04
