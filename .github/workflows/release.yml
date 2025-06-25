@@ -79,7 +79,7 @@ jobs:
           mkdir -p charts-final
           mkdir -p helm/deploy/charts
           tar -xvf charts-staged/zfs-localpv-v2.11.0.tgz -C charts-final
-          mv -r charts-final/zfs-localpv/* helm/deploy/charts
+          mv charts-final/zfs-localpv/* helm/deploy/charts
 
       - name: Update the registry and the repository
         run: |
