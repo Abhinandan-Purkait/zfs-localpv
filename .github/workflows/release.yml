@@ -21,23 +21,29 @@ jobs:
 
       - name: Set Image Org
         run: |
-          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=abhinandan-purkait || IMAGE_ORG=${{ secrets.IMAGE_ORG }}
           echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
 
       - name: Log in to GHCR for Helm
         run: nix-shell --pure --run "echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin" ./shell.nix
 
       - name: Pull OCI chart from GHCR
+        env:
+          IMAGE_ORG: ${{ env.IMAGE_ORG }}
+          RAW_TAG: ${{ github.ref_name }}
         run: |
+          TAG="${RAW_TAG#v}"
+          echo "Using chart version: $TAG"
+
           rm -rf deploy/helm/charts
-          CHART_REF=oci://ghcr.io/${{ env.IMAGE_ORG }}/helm/zfs-localpv
-          mkdir -p charts-staged
+          mkdir -p charts-staged charts-final deploy/helm/charts
+
+          CHART_REF=oci://ghcr.io/${IMAGE_ORG}/helm/zfs-localpv
           helm pull "$CHART_REF" \
-            --version "${{ github.ref_name }}" \
+            --version "$TAG" \
             --destination charts-staged
-          mkdir -p charts-final
-          mkdir -p deploy/helm/charts
-          tar -xvf charts-staged/zfs-localpv-v2.11.0.tgz -C charts-final
+
+          tar -xzf charts-staged/zfs-localpv-"$TAG".tgz -C charts-final
           mv charts-final/zfs-localpv/* deploy/helm/charts
 
       - name: Set Chart Version
@@ -50,12 +56,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Login to Quay
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_TOKEN }}
+      # - name: Login to Quay
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: quay.io
+      #     username: ${{ secrets.QUAY_USERNAME }}
+      #     password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -67,7 +73,7 @@ jobs:
       - name: Mirror multi-arch image with crane to Dockerhub
         env:
           SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ env.VERSION }}
-          DH: docker.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ env.VERSION }}
+          DH: docker.io/abhinandan15/zfs-driver:${{ env.VERSION }}
         run: |
             nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.DH }}" ./shell.nix
 
@@ -78,16 +84,16 @@ jobs:
         run: |
             nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.GH }}" ./shell.nix
 
-      - name: Mirror multi-arch image with crane to Quay
-        env:
-          SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ env.VERSION }}
-          QY: quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ env.VERSION }}
-        run: |
-            nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.QY }}"
+      # - name: Mirror multi-arch image with crane to Quay
+      #   env:
+      #     SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ env.VERSION }}
+      #     QY: quay.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ env.VERSION }}
+      #   run: |
+      #       nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.QY }}"
 
       - name: Update the registry and the repository
         run: |
-          nix-shell --pure --run "./scripts/update-reg-repo.sh --registry docker.io --repository openebs" ./shell.nix
+          nix-shell --pure --run "./scripts/update-reg-repo.sh --registry docker.io/ --repository abhinandan15/zfs-driver" ./shell.nix
 
       - name: Publish chart via helm-gh-pages
         uses: stefanprodan/helm-gh-pages@master

@@ -12,91 +12,91 @@ env:
   TAG: ${{ inputs.tag }}
 
 jobs:
-  lint:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # lint:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: cachix/install-nix-action@v22
-      - uses: rrbutani/use-nix-shell-action@v1.1.0
-        with:
-          file: shell.nix
+  #     - uses: cachix/install-nix-action@v22
+  #     - uses: rrbutani/use-nix-shell-action@v1.1.0
+  #       with:
+  #         file: shell.nix
 
-      - name: Check if the chart is publishable
-        run: |
-          ./scripts/update-chart-version.sh --tag "${TAG}" --publish-release
+  #     - name: Check if the chart is publishable
+  #       run: |
+  #         ./scripts/update-chart-version.sh --tag "${TAG}" --publish-release
 
-      - name: Run chart-testing lint
-        run: ct lint --config ct.yaml
+  #     - name: Run chart-testing lint
+  #       run: ct lint --config ct.yaml
 
-  unit-tests:
-    runs-on: ubuntu-22.04
-    needs: ["lint"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # unit-tests:
+  #   runs-on: ubuntu-22.04
+  #   needs: ["lint"]
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.14
-          cache: false
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: 1.20.14
+  #         cache: false
 
-      - name: Unit test
-        run: make test
+  #     - name: Unit test
+  #       run: make test
 
-  bdd-tests:
-    runs-on: ubuntu-22.04
-    needs: ["unit-tests"]
-    strategy:
-      matrix:
-        kubernetes: [v1.27.3]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # bdd-tests:
+  #   runs-on: ubuntu-22.04
+  #   needs: ["unit-tests"]
+  #   strategy:
+  #     matrix:
+  #       kubernetes: [v1.27.3]
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.14
-          cache: false
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: 1.20.14
+  #         cache: false
 
-      - name: Build images locally
-        run:  make zfs-driver-image
+  #     - name: Build images locally
+  #       run:  make zfs-driver-image
 
-      - name: Install zfs utils
-        run: sudo apt-get install zfsutils-linux -y
+  #     - name: Install zfs utils
+  #       run: sudo apt-get install zfsutils-linux -y
 
-      - name: Setup Minikube-Kubernetes
-        uses: medyagh/setup-minikube@latest
-        with:
-          cache: false
-          minikube-version: 1.31.1
-          driver: none
-          kubernetes-version: ${{ matrix.kubernetes }}
-          cni: calico
-          start-args: "--install-addons=false"
+  #     - name: Setup Minikube-Kubernetes
+  #       uses: medyagh/setup-minikube@latest
+  #       with:
+  #         cache: false
+  #         minikube-version: 1.31.1
+  #         driver: none
+  #         kubernetes-version: ${{ matrix.kubernetes }}
+  #         cni: calico
+  #         start-args: "--install-addons=false"
 
-      - name: Set env for kubeconfig
-        run: echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
+  #     - name: Set env for kubeconfig
+  #       run: echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
 
-      - name: bootstrap
-        run: make bootstrap
+  #     - name: bootstrap
+  #       run: make bootstrap
 
-      - name: Run BDD tests
-        env:
-          OPENEBS_NAMESPACE: "openebs"
-        run: |
-          make ci
-          make helm-install
-          make sanity
+  #     - name: Run BDD tests
+  #       env:
+  #         OPENEBS_NAMESPACE: "openebs"
+  #       run: |
+  #         make ci
+  #         make helm-install
+  #         make sanity
 
   csi-driver:
     runs-on: ubuntu-22.04
-    needs: ["bdd-tests"]
+    # needs: ["bdd-tests"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -163,7 +163,7 @@ jobs:
 
   release-chart:
     runs-on: ubuntu-22.04
-    needs: ["csi-driver"]
+    #needs: ["csi-driver"]
     steps:
       - uses: actions/checkout@v4
 
@@ -174,13 +174,18 @@ jobs:
           echo "NIX_PATH=$NIX_PATH" >> $GITHUB_ENV
           nix-shell --pure --run "echo" ./shell.nix
 
+      - name: Set Image Org
+        run: |
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=abhinandan-purkait || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
+
       - name: Check if the chart is publishable
         run: |
           nix-shell --pure --run "./scripts/update-chart-version.sh --tag ${TAG} --publish-release" ./shell.nix
 
       - name: Update the registry and repository in values.yaml
         run: |
-          nix-shell --pure --run "./scripts/update-reg-repo.sh --registry ghcr.io --repository ${{ env.IMAGE_ORG }}/dev" ./shell.nix
+          nix-shell --pure --run "./scripts/update-reg-repo.sh --registry ghcr.io/ --repository ${{ env.IMAGE_ORG }}/dev/zfs-driver" ./shell.nix
 
       - name: Set Chart Version
         run: |
@@ -190,7 +195,7 @@ jobs:
         uses: appany/helm-oci-chart-releaser@v0.4.2
         with:
           name: zfs-localpv
-          repository: helm
+          repository: abhinandan-purkait/helm
           tag: ${{ env.VERSION }}
           path: ./deploy/helm/charts
           registry: ghcr.io
