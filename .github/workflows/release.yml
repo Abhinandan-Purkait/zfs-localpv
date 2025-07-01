@@ -74,7 +74,7 @@ jobs:
       - name: Mirror multi-arch image with crane to Dockerhub
         env:
           SRC: ghcr.io/${{ env.IMAGE_ORG }}/dev/zfs-driver:${{ env.VERSION }}
-          DH: docker.io/${{ env.IMAGE_ORG }}/zfs-driver:${{ env.VERSION }}
+          DH: docker.io/abhinandanpurkait/zfs-driver:${{ env.VERSION }}
         run: |
             nix-shell --pure --run "crane copy --platform all ${{ env.SRC }} ${{ env.DH }}" ./shell.nix
 
